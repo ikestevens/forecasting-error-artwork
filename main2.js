@@ -1,5 +1,6 @@
 // ========== PARAMETERS ==========
-let errorRate; // will be loaded from JSON
+let errorRate; // will be loaded from JSON (rolling_30d)
+let dailyErrorRate; // daily error rate
 
 // Grid setup
 let gridSpacing = 75; // Distance between grid points
@@ -20,7 +21,8 @@ let gapHeight; // Height of gaps between strips
 
 function preload() {
     loadJSON('error_rate.json', (data) => {
-        errorRate = data.error;
+        errorRate = data.rolling_30d;
+        dailyErrorRate = data.daily;
     });
 }
 
@@ -34,21 +36,22 @@ function setup() {
 }
 
 function calculateParameters() {
-    if (errorRate === undefined) errorRate = 0.17;
+    if (errorRate === undefined) errorRate = 0.273; // fallback to current rolling_30d value
+    if (dailyErrorRate === undefined) dailyErrorRate = 0.233; // fallback to current daily value
 
-    // At HIGH error (17%): choppy chaotic waves
+    // At HIGH error (27.3%): choppy chaotic waves
     // At LOW error (0%): smooth harmonious waves
-    let errorNormalized = errorRate / 0.17; // 1.0 at high error, 0.0 at low error
+    let errorNormalized = errorRate / 0.273; // 1.0 at high error, 0.0 at low error
 
     waveAmplitude = 20 + errorNormalized * 80; // 20px to 100px
     waveFrequency = 0.02 + errorNormalized * 0.05; // Low freq = smooth, high freq = choppy (reduced max)
     chaosAmount = errorNormalized * 1.5; // 0 to 1.5 (reduced noise amount)
 
-    // Number of strips = error rate as percentage (17% = 17 strips)
+    // Number of strips = error rate as percentage (27.3% = 27 strips)
     numStrips = round(errorRate * 100);
     if (numStrips === 0) numStrips = 1; // Always show at least 1 strip
 
-    // Calculate strip dimensions - no gaps, colors are the separators
+    // Calculate strip dimensions - no gaps
     gapHeight = 0;
     stripHeight = height / numStrips;
 }
@@ -60,7 +63,7 @@ function draw() {
 
     // Draw alternating gray backgrounds
     noStroke();
-    fill('#E8E8E8'); // Light gray (slightly darker)
+    fill('#E8E8E8'); // Light gray
     for (let s = 0; s < numStrips; s++) {
         if (s % 2 === 1) { // Every other strip
             let stripY = s * (stripHeight + gapHeight);
@@ -68,7 +71,7 @@ function draw() {
         }
     }
 
-    // Draw wave grid with black lines on white strips (even indices)
+    // Draw wave grid with blue lines on white strips (even indices)
     for (let s = 0; s < numStrips; s++) {
         if (s % 2 === 0) { // White background strips
             let stripY = s * (stripHeight + gapHeight);
@@ -112,9 +115,9 @@ function draw() {
         }
     }
 
-    // Draw wave grid with red lines on blue strips (odd indices)
+    // Draw wave grid with dark lines on gray strips (odd indices)
     for (let s = 0; s < numStrips; s++) {
-        if (s % 2 === 1) { // Blue background strips
+        if (s % 2 === 1) { // Gray background strips
             let stripY = s * (stripHeight + gapHeight);
 
             push();
@@ -181,16 +184,24 @@ function calculateWaveOffset(x, y, t) {
 }
 
 function drawErrorLabel() {
-    let label = `Sales Forecasting Error ${(errorRate * 100).toFixed(1)}%`;
+    let label1Text = '30-Day Error';
+    let label1Value = `${(errorRate * 100).toFixed(1)}%`;
+    let label2Text = 'Daily Error';
+    let label2Value = `${(dailyErrorRate * 100).toFixed(1)}%`;
 
     textSize(32);
     textStyle(BOLD);
-    let textW = textWidth(label);
+
+    // Calculate widths for layout
+    let labelWidth = max(textWidth(label1Text), textWidth(label2Text));
+    let valueWidth = max(textWidth(label1Value), textWidth(label2Value));
+    let spacing = 20; // Space between label and value
 
     let pad = 20;
     let innerPad = 16;
-    let boxW = textW + innerPad * 2;
-    let boxH = 50;
+    let lineHeight = 40;
+    let boxW = labelWidth + spacing + valueWidth + innerPad * 2;
+    let boxH = lineHeight * 2 + innerPad;
     let x = width - pad - boxW;
     let y = pad;
 
@@ -204,11 +215,20 @@ function drawErrorLabel() {
     noFill();
     rect(x, y, boxW, boxH, 8);
 
-    // Draw text
+    // Draw text with aligned columns
     noStroke();
-    fill(180, 0, 0, 200);
-    textAlign(LEFT, CENTER);
-    text(label, x + innerPad, y + boxH / 2);
+    fill(220, 100, 100); // Light coral pink, less alarming than red
+
+    // Left-align labels
+    textAlign(LEFT, TOP);
+    text(label1Text, x + innerPad, y + innerPad);
+    text(label2Text, x + innerPad, y + innerPad + lineHeight);
+
+    // Right-align values
+    textAlign(RIGHT, TOP);
+    let valueX = x + boxW - innerPad;
+    text(label1Value, valueX, y + innerPad);
+    text(label2Value, valueX, y + innerPad + lineHeight);
 }
 
 function windowResized() {
