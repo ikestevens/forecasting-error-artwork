@@ -184,6 +184,7 @@ function calculateWaveOffset(x, y, t) {
 }
 
 function drawErrorLabel() {
+    let titleText = 'Sales Forecasting';
     let label1Text = '30-Day Error';
     let label1Value = `${(errorRate * 100).toFixed(1)}%`;
     let label2Text = 'Daily Error';
@@ -193,6 +194,7 @@ function drawErrorLabel() {
     textStyle(BOLD);
 
     // Calculate widths for layout
+    let titleWidth = textWidth(titleText);
     let labelWidth = max(textWidth(label1Text), textWidth(label2Text));
     let valueWidth = max(textWidth(label1Value), textWidth(label2Value));
     let spacing = 20; // Space between label and value
@@ -200,8 +202,8 @@ function drawErrorLabel() {
     let pad = 20;
     let innerPad = 16;
     let lineHeight = 40;
-    let boxW = labelWidth + spacing + valueWidth + innerPad * 2;
-    let boxH = lineHeight * 2 + innerPad;
+    let boxW = max(titleWidth, labelWidth + spacing + valueWidth) + innerPad * 2;
+    let boxH = lineHeight * 3 + innerPad;
     let x = width - pad - boxW;
     let y = pad;
 
@@ -215,20 +217,25 @@ function drawErrorLabel() {
     noFill();
     rect(x, y, boxW, boxH, 8);
 
-    // Draw text with aligned columns
+    // Draw title
     noStroke();
+    fill(50); // Dark gray
+    textAlign(CENTER, TOP);
+    text(titleText, x + boxW / 2, y + innerPad);
+
+    // Draw text with aligned columns
     fill(220, 100, 100); // Light coral pink, less alarming than red
 
     // Left-align labels
     textAlign(LEFT, TOP);
-    text(label1Text, x + innerPad, y + innerPad);
-    text(label2Text, x + innerPad, y + innerPad + lineHeight);
+    text(label1Text, x + innerPad, y + innerPad + lineHeight);
+    text(label2Text, x + innerPad, y + innerPad + lineHeight * 2);
 
     // Right-align values
     textAlign(RIGHT, TOP);
     let valueX = x + boxW - innerPad;
-    text(label1Value, valueX, y + innerPad);
-    text(label2Value, valueX, y + innerPad + lineHeight);
+    text(label1Value, valueX, y + innerPad + lineHeight);
+    text(label2Value, valueX, y + innerPad + lineHeight * 2);
 }
 
 function windowResized() {
